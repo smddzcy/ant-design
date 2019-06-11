@@ -11,11 +11,13 @@ import { ConfigConsumer, ConfigConsumerProps } from '../config-provider';
 export interface DescriptionsItemProps {
   prefixCls?: string;
   label: React.ReactNode;
-  children: JSX.Element;
   span?: number;
+  children?: React.ReactNode;
 }
 
-const DescriptionsItem: React.SFC<DescriptionsItemProps> = ({ children }) => children;
+const DescriptionsItem: React.SFC<DescriptionsItemProps> = ({ children }) => (
+  <span>{children}</span>
+);
 
 export interface DescriptionsProps {
   prefixCls?: string;
@@ -36,29 +38,32 @@ export interface DescriptionsProps {
 const generateChildrenRows = (
   cloneChildren: React.ReactNode,
   column: number,
-): React.ReactElement<DescriptionsItemProps>[][] => {
-  const childrenArray: React.ReactElement<DescriptionsItemProps>[][] = [];
-  let columnArray: React.ReactElement<DescriptionsItemProps>[] = [];
+): React.FunctionComponentElement<DescriptionsItemProps>[][] => {
+  const childrenArray: React.FunctionComponentElement<DescriptionsItemProps>[][] = [];
+  let columnArray: React.FunctionComponentElement<DescriptionsItemProps>[] = [];
   let totalRowSpan = 0;
-  React.Children.forEach(cloneChildren, (node: React.ReactElement<DescriptionsItemProps>) => {
-    columnArray.push(node);
-    if (node.props.span) {
-      totalRowSpan += node.props.span;
-    } else {
-      totalRowSpan += 1;
-    }
-    if (totalRowSpan >= column) {
-      warning(
-        totalRowSpan <= column,
-        'Descriptions',
-        'Sum of column `span` in a line exceeds `column` of Descriptions.',
-      );
+  React.Children.forEach(
+    cloneChildren,
+    (node: React.FunctionComponentElement<DescriptionsItemProps>) => {
+      columnArray.push(node);
+      if (node.props.span) {
+        totalRowSpan += node.props.span;
+      } else {
+        totalRowSpan += 1;
+      }
+      if (totalRowSpan >= column) {
+        warning(
+          totalRowSpan <= column,
+          'Descriptions',
+          'Sum of column `span` in a line exceeds `column` of Descriptions.',
+        );
 
-      childrenArray.push(columnArray);
-      columnArray = [];
-      totalRowSpan = 0;
-    }
-  });
+        childrenArray.push(columnArray);
+        columnArray = [];
+        totalRowSpan = 0;
+      }
+    },
+  );
   if (columnArray.length > 0) {
     childrenArray.push(columnArray);
     columnArray = [];
@@ -76,7 +81,10 @@ const generateChildrenRows = (
  *   <td>{DescriptionsItem.children}</td>
  * </>
  */
-const renderCol = (child: React.ReactElement<DescriptionsItemProps>, bordered: boolean) => {
+const renderCol = (
+  child: React.FunctionComponentElement<DescriptionsItemProps>,
+  bordered: boolean,
+) => {
   const { prefixCls, label, children, span = 1 } = child.props;
   if (bordered) {
     return [
@@ -101,30 +109,30 @@ const renderCol = (child: React.ReactElement<DescriptionsItemProps>, bordered: b
 };
 
 const renderRow = (
-  children: React.ReactElement<DescriptionsItemProps>[],
+  children: React.FunctionComponentElement<DescriptionsItemProps>[],
   index: number,
   { prefixCls, column, isLast }: { prefixCls: string; column: number; isLast: boolean },
   bordered: boolean,
 ) => {
   // copy children,prevent changes to incoming parameters
   const childrenArray = [...children];
-  let lastChildren = childrenArray.pop() as React.ReactElement<DescriptionsItemProps>;
+  let lastChildren = childrenArray.pop();
   const span = column - childrenArray.length;
-  if (isLast) {
-    lastChildren = React.cloneElement(lastChildren as React.ReactElement<DescriptionsItemProps>, {
+  if (isLast && lastChildren) {
+    lastChildren = React.cloneElement(lastChildren, {
       span,
     });
   }
   const cloneChildren = React.Children.map(
     childrenArray,
-    (childrenItem: React.ReactElement<DescriptionsItemProps>) => {
+    (childrenItem: React.FunctionComponentElement<DescriptionsItemProps>) => {
       return renderCol(childrenItem, bordered);
     },
   );
   return (
     <tr className={`${prefixCls}-row`} key={index}>
       {cloneChildren}
-      {renderCol(lastChildren, bordered)}
+      {lastChildren && renderCol(lastChildren, bordered)}
     </tr>
   );
 };
@@ -148,13 +156,17 @@ class Descriptions extends React.Component<
     size: 'default',
     column: defaultColumnMap,
   };
+
   static Item: typeof DescriptionsItem;
+
   state: {
     screens: BreakpointMap;
   } = {
     screens: {},
   };
+
   token: string;
+
   componentDidMount() {
     const { column } = this.props;
     this.token = ResponsiveObserve.subscribe(screens => {
@@ -172,18 +184,19 @@ class Descriptions extends React.Component<
   }
 
   getColumn(): number {
+    const { screens = {} } = this.state;
     const { column } = this.props;
     if (typeof column === 'object') {
-      for (let i = 0; i < responsiveArray.length; i++) {
+      for (let i = 0; i < responsiveArray.length; i = +1) {
         const breakpoint: Breakpoint = responsiveArray[i];
-        if (this.state.screens[breakpoint] && column[breakpoint] !== undefined) {
+        if (screens[breakpoint] && column[breakpoint] !== undefined) {
           return column[breakpoint] || defaultColumnMap[breakpoint];
         }
       }
     }
-    //If the configuration is not an object, it is a number, return number
+    // If the configuration is not an object, it is a number, return number
     if (typeof column === 'number') {
-      return column as number;
+      return column;
     }
     // If it is an object, but no response is found, this happens only in the test.
     // Maybe there are some strange environments
@@ -198,7 +211,7 @@ class Descriptions extends React.Component<
             className,
             prefixCls: customizePrefixCls,
             title,
-            size,
+            size = 'default',
             children,
             bordered = false,
           } = this.props;
@@ -215,12 +228,12 @@ class Descriptions extends React.Component<
           );
 
           const childrenArray: Array<
-            React.ReactElement<DescriptionsItemProps>[]
+            React.FunctionComponentElement<DescriptionsItemProps>[]
           > = generateChildrenRows(cloneChildren, column);
           return (
             <div
               className={classNames(prefixCls, className, {
-                [size as string]: size !== 'default',
+                [size]: size !== 'default',
                 bordered,
               })}
             >
