@@ -49,7 +49,7 @@ class Editable extends React.Component<EditableProps, EditableState> {
   }
 
   onChange: React.ChangeEventHandler<HTMLTextAreaElement> = ({ target: { value } }) => {
-    this.setState({ current: value.replace(/[\r\n]/g, '') });
+    this.setState({ current: value });
   };
 
   onCompositionStart = () => {
@@ -92,7 +92,7 @@ class Editable extends React.Component<EditableProps, EditableState> {
   };
 
   onBlur: React.FocusEventHandler<HTMLTextAreaElement> = () => {
-    this.confirmChange();
+    this.props.onCancel();
   };
 
   confirmChange = () => {
