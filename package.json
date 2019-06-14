@@ -232,7 +232,7 @@
     "lint-staged:es": "eslint ./.*.js ./webpack.config.js",
     "lint-staged:demo": "cross-env RUN_ENV=DEMO eslint --ext '.md'",
     "prettier": "prettier -c --write '**/*'",
-    "prepare": "npm run pub"
+    "prepare": "npm run compile && npm run dist"
   },
   "pre-commit": [
     "lint-staged"
