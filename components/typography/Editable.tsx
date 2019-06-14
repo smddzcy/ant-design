@@ -36,6 +36,7 @@ class Editable extends React.Component<EditableProps, EditableState> {
 
   textarea?: TextArea;
   lastKeyCode?: number;
+  lastKeyHasModifier: boolean = false;
   inComposition?: boolean = false;
 
   state = {
@@ -49,6 +50,10 @@ class Editable extends React.Component<EditableProps, EditableState> {
   }
 
   onChange: React.ChangeEventHandler<HTMLTextAreaElement> = ({ target: { value } }) => {
+    if (this.lastKeyCode === KeyCode.ENTER && !this.lastKeyHasModifier) {
+      // user just pressed Enter, don't change the value
+      return;
+    }
     this.setState({ current: value });
   };
 
@@ -59,11 +64,18 @@ class Editable extends React.Component<EditableProps, EditableState> {
     this.inComposition = false;
   };
 
-  onKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = ({ keyCode }) => {
+  onKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = ({
+    keyCode,
+    ctrlKey,
+    altKey,
+    metaKey,
+    shiftKey,
+  }) => {
     // We don't record keyCode when IME is using
     if (this.inComposition) return;
 
     this.lastKeyCode = keyCode;
+    this.lastKeyHasModifier = ctrlKey || altKey || metaKey || shiftKey;
   };
 
   onKeyUp: React.KeyboardEventHandler<HTMLTextAreaElement> = ({
@@ -75,14 +87,8 @@ class Editable extends React.Component<EditableProps, EditableState> {
   }) => {
     const { onCancel } = this.props;
     // Check if it's a real key
-    if (
-      this.lastKeyCode === keyCode &&
-      !this.inComposition &&
-      !ctrlKey &&
-      !altKey &&
-      !metaKey &&
-      !shiftKey
-    ) {
+    const noModifier = !ctrlKey && !altKey && !metaKey && !shiftKey;
+    if (this.lastKeyCode === keyCode && !this.inComposition && noModifier) {
       if (keyCode === KeyCode.ENTER) {
         this.confirmChange();
       } else if (keyCode === KeyCode.ESC) {
