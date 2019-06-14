@@ -40,13 +40,13 @@ async function checkCommit({ files }) {
   }
 }
 
-async function checkRemote() {
-  const { remote } = await git.fetch('origin', 'master');
-  if (remote.indexOf('ant-design/ant-design') === -1) {
-    console.log(chalk.yellow('😓 Your remote origin is not ant-design. Do you fork it?'));
-    exitProcess();
-  }
-}
+// async function checkRemote() {
+//   const { remote } = await git.fetch('origin', 'master');
+//   if (remote.indexOf('ant-design/ant-design') === -1) {
+//     console.log(chalk.yellow('😓 Your remote origin is not ant-design. Do you fork it?'));
+//     exitProcess();
+//   }
+// }
 
 async function checkAll() {
   const status = await git.status();
@@ -57,7 +57,7 @@ async function checkAll() {
 
   await checkCommit(status);
 
-  await checkRemote();
+  // await checkRemote();
 }
 
 checkAll();
